@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Store</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #fafafa; }
+        nav { background: #333; color: white; padding: 15px; display: flex; justify-content: space-between; }
+        .container { padding: 20px; max-width: 900px; margin: auto; }
+        .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .book-card { background: white; padding: 15px; border: 1px solid #eee; border-radius: 8px; text-align: center; }
+        .cart-section { background: #fff; padding: 20px; margin-top: 30px; border-top: 3px solid #007bff; }
+        button { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .logout { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <nav>
+        <span id="welcome">Book Store</span>
+        <button class="logout" onclick="location.href='index.html'">Logout</button>
+    </nav>
+
+    <div class="container">
+        <input type="text" id="search" class="search-box" placeholder="Search for books..." onkeyup="loadBooks()">
+        
+        <div id="bookGrid" class="grid"></div>
+
+        <div class="cart-section">
+            <h3>Your Shopping Cart</h3>
+            <div id="cartList">Cart is empty</div>
+            <h4 id="totalPrice"></h4>
+            <button id="checkoutBtn" style="display:none;" onclick="placeOrder()">Place Order</button>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        const user = localStorage.getItem('currentUser') || 'Guest';
+        document.getElementById('welcome').innerText = "Welcome, " + user;
+
+        function loadBooks() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const inventory = JSON.parse(localStorage.getItem('inventory')) || [
+                {id: 1, title: 'JavaScript Basics', author: 'John Doe', price: 20},
+                {id: 2, title: 'Learning CSS', author: 'Jane Smith', price: 15}
+            ];
+
+            const filtered = inventory.filter(b => b.title.toLowerCase().includes(query));
+            const grid = document.getElementById('bookGrid');
+            grid.innerHTML = filtered.map(book => `
+                <div class="book-card">
+                    <h4>${book.title}</h4>
+                    <p>By ${book.author}</p>
+                    <p><strong>$${book.price}</strong></p>
+                    <button onclick="addToCart(${book.id})">Add to Cart</button>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+            const book = inventory.find(b => b.id == id) || {title: 'Default Book', price: 10};
+            cart.push(book);
+            renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cartList');
+            const btn = document.getElementById('checkoutBtn');
+            if (cart.length === 0) {
+                list.innerHTML = "Cart is empty";
+                btn.style.display = 'none';
+            } else {
+                list.innerHTML = cart.map(item => `<div>${item.title} - $${item.price}</div>`).join('');
+                const total = cart.reduce((sum, item) => sum + item.price, 0);
+                document.getElementById('totalPrice').innerText = "Total: $" + total;
+                btn.style.display = 'block';
+            }
+        }
+
+        function placeOrder() {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            orders.push({ user: user, date: new Date().toLocaleDateString(), total: total });
+            localStorage.setItem('orders', JSON.stringify(orders));
+            alert("Order placed!");
+            cart = [];
+            renderCart();
+        }
+
+        loadBooks();
+    </script>
+</body>
+</html>
